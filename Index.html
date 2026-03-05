@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart TCW | Interactive Hardware Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --accent: #ffffff;
+            --bg: #000000;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            scroll-behavior: smooth;
+            background-color: var(--bg);
+            color: #fff;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .text-outline {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+            color: transparent;
+        }
+
+        .circuit-bg {
+            background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .modal-enter {
+            animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(15px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .stagger-item {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: staggerIn 0.3s ease-out forwards;
+        }
+
+        @keyframes staggerIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-glow {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-glow:hover {
+            box-shadow: 0 15px 30px rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-5px);
+        }
+
+        section { overflow: hidden; }
+
+        .chart-container {
+            position: relative;
+            height: 120px;
+            width: 100%;
+        }
+
+        .pin-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4ade80;
+            display: inline-block;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden circuit-bg">
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed w-full z-40 transition-all duration-500 py-6 border-b border-transparent">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-3 group cursor-pointer">
+                <div class="w-8 h-8 bg-white flex items-center justify-center rotate-45 group-hover:rotate-90 transition-transform duration-700">
+                    <i class="fas fa-bolt text-black text-[10px] -rotate-45"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tighter uppercase">TCW.SMART</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-10">
+                <a href="#home" class="text-[10px] uppercase tracking-widest hover:text-gray-400 transition-colors">Overview</a>
+                <a href="#architecture" class="text-[10px] uppercase tracking-widest hover:text-gray-400 transition-colors">Architecture</a>
+                <a href="#health" class="text-[10px] uppercase tracking-widest hover:text-gray-400 transition-colors">Vitals</a>
+                <a href="#hardware" class="text-[10px] uppercase tracking-widest hover:text-gray-400 transition-colors">Hardware</a>
+                <a href="#team" class="text-[10px] uppercase tracking-widest hover:text-gray-400 transition-colors">Team</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Compact Modal -->
+    <div id="modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-6">
+        <div class="bg-zinc-900 border border-white/10 max-w-sm w-full p-6 rounded-[1.5rem] modal-enter relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-all"><i class="fas fa-times text-sm"></i></button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex flex-col justify-center px-6 pt-20">
+        <div class="max-w-7xl mx-auto w-full relative">
+            <div class="flex items-center gap-4 mb-8" data-aos="fade-right">
+                <span class="h-[1px] w-12 bg-white/30"></span>
+                <p class="text-[11px] tracking-[0.6em] uppercase text-gray-500 font-medium">BSc Electronics Engineering • Project v2.5</p>
+            </div>
+            
+            <h1 class="text-6xl md:text-[8.5rem] font-bold leading-[0.85] mb-12 tracking-tighter" data-aos="fade-up" data-aos-duration="1200">
+                TONGUE<br><span class="text-outline">DRIVEN</span><br>ASSISTIVE
+            </h1>
+
+            <!-- Expanded Overview Block -->
+            <div class="grid md:grid-cols-2 gap-12 mt-12 items-start">
+                <div data-aos="fade-up" data-aos-delay="400" class="space-y-6">
+                    <div>
+                        <h3 class="text-xs uppercase tracking-[0.3em] font-bold mb-4 text-emerald-500">Project Mission</h3>
+                        <p class="text-gray-300 text-lg leading-relaxed font-light">
+                            Traditional joysticks require hand coordination, but many patients with <span class="text-white font-medium">Quadriplegia</span> or severe <span class="text-white font-medium">Spinal Cord Injuries</span> retain only movement above the neck. We developed this to restore their independence using the tongue as a high-precision input device.
+                        </p>
+                    </div>
+                    
+                    <div class="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                        <h4 class="text-[10px] uppercase tracking-widest font-bold mb-3 text-white">Target User Profile</h4>
+                        <ul class="space-y-3">
+                            <li class="flex items-start gap-3 text-xs text-gray-400">
+                                <i class="fas fa-user-check text-emerald-500 mt-0.5"></i>
+                                <span>Patients with total limb paralysis (C1-C4 spinal injury).</span>
+                            </li>
+                            <li class="flex items-start gap-3 text-xs text-gray-400">
+                                <i class="fas fa-user-check text-emerald-500 mt-0.5"></i>
+                                <span>Individuals with Motor Neuron Disease (MND/ALS).</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4" data-aos="fade-left" data-aos-delay="600">
+                    <div class="p-6 bg-zinc-900 border border-white/5 rounded-2xl">
+                        <span class="block text-[10px] text-gray-600 uppercase mb-2">Wireless Protocol</span>
+                        <span class="text-sm mono text-emerald-400">ESP-NOW (Low Latency)</span>
+                    </div>
+                    <div class="p-6 bg-zinc-900 border border-white/5 rounded-2xl">
+                        <span class="block text-[10px] text-gray-600 uppercase mb-2">Sensing Logic</span>
+                        <span class="text-sm mono text-blue-400">Capacitive Touch</span>
+                    </div>
+                    <div class="p-6 bg-zinc-900 border border-white/5 rounded-2xl col-span-2">
+                        <span class="block text-[10px] text-gray-600 uppercase mb-2">Safety Feature</span>
+                        <span class="text-sm mono text-red-400">Real-time Biometric Vitals Monitoring</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="py-32 bg-zinc-950 border-y border-white/5 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-4xl font-bold uppercase tracking-tighter mb-16" data-aos="fade-right">System Logic & Flow</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8 mb-20">
+                <div class="p-8 bg-zinc-900/50 border border-white/5 rounded-3xl" data-aos="fade-up">
+                    <div class="text-emerald-500 mb-6 flex items-center gap-2">
+                        <i class="fas fa-satellite-dish"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Master Node</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Intra-Oral Sensing</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">The mouth-unit captures TTP223 capacitive triggers. Data is packetized into a C-struct and broadcasted wirelessly.</p>
+                </div>
+                
+                <div class="flex flex-col justify-center items-center text-center p-8 bg-white/5 rounded-3xl border border-dashed border-white/10" data-aos="fade-up" data-aos-delay="100">
+                    <i class="fas fa-wifi text-3xl mb-4 animate-pulse"></i>
+                    <h3 class="text-xl font-bold mb-2">Wireless Bus</h3>
+                    <p class="text-[10px] uppercase opacity-40">ESP-NOW 2.4GHz</p>
+                </div>
+
+                <div class="p-8 bg-zinc-900/50 border border-white/5 rounded-3xl" data-aos="fade-up" data-aos-delay="200">
+                    <div class="text-blue-500 mb-6 flex items-center gap-2">
+                        <i class="fas fa-cogs"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Slave Node</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Motor Control</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">The base-unit decodes packets to drive L298N PWM signals for precision movement.</p>
+                </div>
+            </div>
+
+            <!-- Flow Diagram -->
+            <div class="hidden md:flex justify-between items-center px-12 py-8 bg-black border border-white/5 rounded-2xl" data-aos="zoom-in">
+                <div class="text-center">
+                    <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center mx-auto mb-2 text-xs">1</div>
+                    <span class="text-[9px] uppercase tracking-widest">Tongue Touch</span>
+                </div>
+                <i class="fas fa-long-arrow-alt-right opacity-20"></i>
+                <div class="text-center">
+                    <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center mx-auto mb-2 text-xs">2</div>
+                    <span class="text-[9px] uppercase tracking-widest">Interrupt Trigger</span>
+                </div>
+                <i class="fas fa-long-arrow-alt-right opacity-20"></i>
+                <div class="text-center">
+                    <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center mx-auto mb-2 text-xs">3</div>
+                    <span class="text-[9px] uppercase tracking-widest">Wireless TX</span>
+                </div>
+                <i class="fas fa-long-arrow-alt-right opacity-20"></i>
+                <div class="text-center">
+                    <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center mx-auto mb-2 text-xs">4</div>
+                    <span class="text-[9px] uppercase tracking-widest">PWM Drive</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Health Section -->
+    <section id="health" class="py-32 bg-black">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-16">
+                <h2 class="text-4xl font-bold uppercase tracking-tighter mb-4" data-aos="fade-right">Biometric Monitoring</h2>
+                <p class="text-gray-500 max-w-lg">Continuous safety tracking using infrared oximetry and high-precision thermal probes.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 hover:border-red-500/30 transition-all group cursor-pointer" onclick="openHardware('max30100')" data-aos="fade-up">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-bold text-red-500 tracking-widest uppercase">Heart Rate</span>
+                        <i class="fas fa-heartbeat animate-pulse text-red-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold mb-4">78 <span class="text-[10px] opacity-40">BPM</span></div>
+                    <div class="chart-container"><canvas id="heartRateChart"></canvas></div>
+                </div>
+
+                <div class="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all group cursor-pointer" onclick="openHardware('max30100')" data-aos="fade-up" data-aos-delay="100">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-bold text-blue-500 tracking-widest uppercase">SpO2</span>
+                        <i class="fas fa-wind text-blue-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold mb-4">99 <span class="text-[10px] opacity-40">%</span></div>
+                    <div class="chart-container"><canvas id="spo2Chart"></canvas></div>
+                </div>
+
+                <div class="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 hover:border-orange-500/30 transition-all group cursor-pointer" onclick="openHardware('ds18b20')" data-aos="fade-up" data-aos-delay="200">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-bold text-orange-500 tracking-widest uppercase">Body Temp</span>
+                        <i class="fas fa-thermometer-high text-orange-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold mb-4">36.8 <span class="text-[10px] opacity-40">°C</span></div>
+                    <div class="chart-container"><canvas id="tempChart"></canvas></div>
+                </div>
+
+                <div class="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 hover:border-emerald-500/30 transition-all group cursor-pointer" onclick="openHardware('esp32')" data-aos="fade-up" data-aos-delay="300">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Stress Factor</span>
+                        <i class="fas fa-brain text-emerald-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold mb-4">42 <span class="text-[10px] opacity-40">MS</span></div>
+                    <div class="chart-container"><canvas id="stressChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Matrix -->
+    <section id="hardware" class="py-32 bg-white text-black rounded-t-[3rem]">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-4xl font-bold uppercase tracking-tighter mb-16">Component Diagnostics</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div onclick="openHardware('esp32')" class="group p-8 bg-zinc-50 border border-zinc-200 rounded-[2rem] cursor-pointer card-glow">
+                    <i class="fas fa-microchip text-2xl mb-6"></i>
+                    <h3 class="text-xl font-bold uppercase mb-2">ESP32 Compute</h3>
+                    <p class="text-xs opacity-60 mb-6">The brain handling telemetry and motor logic.</p>
+                </div>
+                <div onclick="openHardware('ttp223')" class="group p-8 bg-zinc-50 border border-zinc-200 rounded-[2rem] cursor-pointer card-glow">
+                    <i class="fas fa-fingerprint text-2xl mb-6"></i>
+                    <h3 class="text-xl font-bold uppercase mb-2">TTP223 Sensing</h3>
+                    <p class="text-xs opacity-60 mb-6">Directional sensors used for tongue input.</p>
+                </div>
+                <div onclick="openHardware('l298n')" class="group p-8 bg-zinc-50 border border-zinc-200 rounded-[2rem] cursor-pointer card-glow">
+                    <i class="fas fa-route text-2xl mb-6"></i>
+                    <h3 class="text-xl font-bold uppercase mb-2">L298N Driver</h3>
+                    <p class="text-xs opacity-60 mb-6">Power stage controlling the DC motors.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="py-24 bg-zinc-50 text-black border-t border-zinc-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-2xl font-bold uppercase tracking-tighter mb-12" data-aos="fade-right">Project Team</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-8 bg-white border border-zinc-100 rounded-2xl" data-aos="fade-up">
+                    <p class="text-[9px] mono text-gray-400 mb-2">LRAXSEL007</p>
+                    <h3 class="font-bold uppercase text-sm">Mufeeda</h3>
+                </div>
+                <div class="p-8 bg-white border border-zinc-100 rounded-2xl" data-aos="fade-up" data-aos-delay="50">
+                    <p class="text-[9px] mono text-gray-400 mb-2">LRAXSEL019</p>
+                    <h3 class="font-bold uppercase text-sm">Muhammed Shahul Hameed</h3>
+                </div>
+                <div class="p-8 bg-white border border-zinc-100 rounded-2xl" data-aos="fade-up" data-aos-delay="100">
+                    <p class="text-[9px] mono text-gray-400 mb-2">LRAXSEL022</p>
+                    <h3 class="font-bold uppercase text-sm">Umer Swafwan</h3>
+                </div>
+                <div class="p-8 bg-white border border-zinc-100 rounded-2xl" data-aos="fade-up" data-aos-delay="150">
+                    <p class="text-[9px] mono text-gray-400 mb-2">LRAXSEL028</p>
+                    <h3 class="font-bold uppercase text-sm">Fathima Shifa</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 px-6 border-t border-white/5 text-center bg-black">
+        <p class="text-[9px] text-gray-700 uppercase tracking-widest font-bold">University of Calicut • Electronics • 2023-26</p>
+    </footer>
+
+    <script>
+        AOS.init({ duration: 800, once: true });
+
+        // Chart Simulation logic
+        function createChart(id, color, initialData) {
+            const ctx = document.getElementById(id).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: new Array(10).fill(''),
+                    datasets: [{
+                        data: initialData,
+                        borderColor: color,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: color + '10'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { display: false }, x: { display: false } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        window.onload = () => {
+            const charts = [
+                createChart('heartRateChart', '#ef4444', [72, 75, 78, 74, 76, 79, 78, 77, 78, 80]),
+                createChart('spo2Chart', '#3b82f6', [98, 99, 99, 98, 99, 99, 100, 99, 99, 99]),
+                createChart('tempChart', '#f97316', [36.5, 36.6, 36.8, 36.7, 36.8, 36.9, 36.8, 36.8, 36.9, 37.0]),
+                createChart('stressChart', '#10b981', [40, 42, 45, 41, 39, 44, 42, 43, 40, 42])
+            ];
+
+            setInterval(() => {
+                charts.forEach(chart => {
+                    chart.data.datasets[0].data.shift();
+                    const lastVal = chart.data.datasets[0].data[chart.data.datasets[0].data.length-1];
+                    const newVal = lastVal + (Math.random() - 0.5) * (lastVal * 0.05);
+                    chart.data.datasets[0].data.push(newVal);
+                    chart.update('none');
+                });
+            }, 2000);
+        };
+
+        const hardwareData = {
+            esp32: {
+                title: "ESP32 Controller",
+                purpose: "Acts as the central MCU. It manages the ESP-NOW protocol, which allows the mouth-unit and wheelchair base to communicate without a Wi-Fi router.",
+                pins: [
+                    { label: "VIN", desc: "5V Power" },
+                    { label: "GND", desc: "Common Ground" },
+                    { label: "GPIO 4", desc: "Temp Data" },
+                    { label: "GPIO 21/22", desc: "I2C Bus" }
+                ],
+                icon: "fa-microchip"
+            },
+            ttp223: {
+                title: "TTP223 Sensor",
+                purpose: "A capacitive touch sensor used for steering. We chose this because it can detect the tongue's presence through a waterproof barrier, making it hygienic.",
+                pins: [
+                    { label: "VCC", desc: "3.3V-5V" },
+                    { label: "GND", desc: "Ground" },
+                    { label: "SIG", desc: "Digital Trigger" }
+                ],
+                icon: "fa-fingerprint"
+            },
+            l298n: {
+                title: "L298N Motor Driver",
+                purpose: "The power bridge between the ESP32 and the 12V DC motors. It handles the high current needed to move the wheelchair and its occupant.",
+                pins: [
+                    { label: "ENA/ENB", desc: "PWM Speed" },
+                    { label: "IN1-4", desc: "Direction Pins" },
+                    { label: "12V", desc: "Battery Input" }
+                ],
+                icon: "fa-route"
+            },
+            max30100: {
+                title: "MAX30100 Pulse",
+                purpose: "Monitors oxygen saturation and heart rate. This is critical for early detection of respiratory distress in paralyzed users.",
+                pins: [
+                    { label: "VCC", desc: "3.3V Power" },
+                    { label: "SDA", desc: "Data Line" },
+                    { label: "SCL", desc: "Clock Line" }
+                ],
+                icon: "fa-heartbeat"
+            },
+            ds18b20: {
+                title: "DS18B20 Temp",
+                purpose: "A high-precision 1-Wire temperature sensor. It is used to monitor for hyperthermia or fever, alerting caregivers immediately.",
+                pins: [
+                    { label: "VCC", desc: "3V-5V" },
+                    { label: "DQ", desc: "Digital Data" },
+                    { label: "GND", desc: "Ground" }
+                ],
+                icon: "fa-thermometer-half"
+            }
+        };
+
+        function openHardware(key) {
+            const data = hardwareData[key];
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+                <div class="stagger-item flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-white text-black flex items-center justify-center rounded-lg shadow-lg"><i class="fas ${data.icon}"></i></div>
+                    <div>
+                        <h2 class="text-lg font-bold uppercase tracking-tighter">${data.title}</h2>
+                        <p class="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">Active Component</p>
+                    </div>
+                </div>
+                
+                <div class="mb-6 stagger-item">
+                    <h4 class="text-[10px] uppercase text-gray-500 font-bold mb-2">Why we use it</h4>
+                    <p class="text-gray-300 text-xs leading-relaxed italic border-l-2 border-white/20 pl-4">${data.purpose}</p>
+                </div>
+
+                <div class="stagger-item">
+                    <h4 class="text-[10px] uppercase text-gray-500 font-bold mb-3">Pin-out Configuration</h4>
+                    <div class="space-y-2">
+                        ${data.pins.map(pin => `
+                            <div class="flex items-center justify-between p-2.5 bg-white/5 rounded-xl border border-white/5">
+                                <div class="flex items-center"><span class="pin-dot"></span><span class="text-[10px] font-mono font-bold text-white">${pin.label}</span></div>
+                                <span class="text-[9px] text-gray-500 italic">${pin.desc}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <button onclick="closeModal()" class="w-full mt-8 text-[9px] uppercase tracking-widest bg-white text-black py-4 font-bold rounded-xl active:scale-95 shadow-xl transition-all">Close Diagnostics</button>
+            `;
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        window.onscroll = function() {
+            const nav = document.getElementById("navbar");
+            if (window.scrollY > 50) {
+                nav.classList.add("bg-black/90", "backdrop-blur-xl", "py-4", "border-white/10");
+            } else {
+                nav.classList.remove("bg-black/90", "backdrop-blur-xl", "py-4", "border-white/10");
+            }
+        };
+    </script>
+</body>
+</html>
+
